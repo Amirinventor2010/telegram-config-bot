@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:15
+    container_name: icyconfig_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: icyuser
+      POSTGRES_PASSWORD: icypassword
+      POSTGRES_DB: icyconfig
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: icyconfig_redis
+    restart: always
+
+  bot:
+    build: .
+    container_name: icyconfig_bot
+    restart: always
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+
+volumes:
+  postgres_data:

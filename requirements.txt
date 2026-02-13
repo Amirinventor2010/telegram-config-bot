@@ -1,0 +1,7 @@
+aiogram==3.4.1
+SQLAlchemy==2.0.25
+asyncpg
+redis
+python-dotenv
+alembic
+aiohttp-socks
