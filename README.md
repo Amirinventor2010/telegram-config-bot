@@ -84,7 +84,7 @@ docker compose up --build
 
 ## Author
 
-**AmirGame**
+**AmirGeek**
 
 Telegram: <https://t.me/MR_Amirr_00>
 
