@@ -9,8 +9,21 @@ class Settings:
     # 🔐 Core
     # =========================
     BOT_TOKEN = os.getenv("BOT_TOKEN")
-    ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
     BOT_NAME = os.getenv("BOT_NAME", "ICYCONFIG")
+
+    # =========================
+    # 👑 Multiple Admin Support
+    # =========================
+    ADMIN_IDS = [
+        int(admin_id.strip())
+        for admin_id in os.getenv("ADMIN_IDS", "").split(",")
+        if admin_id.strip().isdigit()
+    ]
+
+    # برای سازگاری با کدهای قدیمی اگر جایی هنوز ADMIN_ID استفاده شده
+    @property
+    def ADMIN_ID(self):
+        return self.ADMIN_IDS[0] if self.ADMIN_IDS else 0
 
     # =========================
     # 🏷 Config Tag Format
@@ -31,7 +44,7 @@ class Settings:
     # =========================
     BRAND_TITLE = os.getenv(
         "BRAND_TITLE",
-        "✨ ICYCONFIG"
+        "✨ FREECONFIG"
     )
 
     BRAND_DESCRIPTION = os.getenv(
@@ -116,7 +129,7 @@ class Settings:
         )
 
     # =========================
-    # 🚀 Redis (فعلاً استفاده نشده)
+    # 🚀 Redis
     # =========================
     REDIS_HOST = os.getenv("REDIS_HOST")
     REDIS_PORT = os.getenv("REDIS_PORT")

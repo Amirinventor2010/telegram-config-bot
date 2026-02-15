@@ -5,6 +5,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
+from sqlalchemy import select
 
 from app.config import settings
 from app.database.session import engine, AsyncSessionLocal
@@ -40,16 +41,16 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
 
     async with AsyncSessionLocal() as session:
-        result = await session.execute(
-            Admin.__table__.select().where(
-                Admin.telegram_id == settings.ADMIN_ID
+        for admin_id in settings.ADMIN_IDS:
+            result = await session.execute(
+                select(Admin).where(Admin.telegram_id == admin_id)
             )
-        )
-        admin = result.first()
+            existing = result.scalar_one_or_none()
 
-        if not admin:
-            session.add(Admin(telegram_id=settings.ADMIN_ID))
-            await session.commit()
+            if not existing:
+                session.add(Admin(telegram_id=admin_id))
+
+        await session.commit()
 
 
 # =========================
@@ -80,7 +81,7 @@ async def main():
         dp.include_router(profile_router)
         dp.include_router(get_config_router)
         dp.include_router(proxy_router)
-        
+
         # -------------------------
         # Admin Routers
         # -------------------------
