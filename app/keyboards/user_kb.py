@@ -9,10 +9,9 @@ def user_main_keyboard():
         keyboard=[
             [
                 KeyboardButton(text="📥 دریافت کانفیگ"),
-                KeyboardButton(text="🌐 دریافت پروکسی"),
             ],
             [
-                KeyboardButton(text="👤 پروفایل من"),
+                KeyboardButton(text="🌐 دریافت پروکسی"),
             ]
         ],
         resize_keyboard=True

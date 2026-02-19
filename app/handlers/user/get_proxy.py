@@ -6,7 +6,6 @@ from sqlalchemy import select
 
 from app.database.session import AsyncSessionLocal
 from app.database.models import Config
-from app.keyboards.user_config_kb import config_pagination_keyboard
 from app.config import settings
 
 
@@ -88,7 +87,7 @@ async def send_proxies_page(message: Message, state: FSMContext, edit=False):
     for idx, proxy in enumerate(page, start=offset + 1):
         text += "━━━━━━━━━━━━━━\n"
         text += f"🔹 پروکسی {idx}\n"
-        text += f"<code>{proxy}</code>\n\n"
+        text += f"{proxy}\n\n"   # ✅ بدون <code>
 
     await state.update_data(offset=next_offset)
 

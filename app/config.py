@@ -9,21 +9,27 @@ class Settings:
     # 🔐 Core
     # =========================
     BOT_TOKEN = os.getenv("BOT_TOKEN")
-    BOT_NAME = os.getenv("BOT_NAME", "ICYCONFIG")
+    BOT_NAME = os.getenv("BOT_NAME", "FREECONFIG")
 
     # =========================
     # 👑 Multiple Admin Support
     # =========================
+    # لیست ادمین‌ها از env به صورت: 111111,222222,333333
     ADMIN_IDS = [
         int(admin_id.strip())
         for admin_id in os.getenv("ADMIN_IDS", "").split(",")
         if admin_id.strip().isdigit()
     ]
 
-    # برای سازگاری با کدهای قدیمی اگر جایی هنوز ADMIN_ID استفاده شده
+    # اولین ادمین = سوپر ادمین
     @property
-    def ADMIN_ID(self):
+    def SUPER_ADMIN_ID(self) -> int:
         return self.ADMIN_IDS[0] if self.ADMIN_IDS else 0
+
+    # برای سازگاری با کدهای قدیمی
+    @property
+    def ADMIN_ID(self) -> int:
+        return self.SUPER_ADMIN_ID
 
     # =========================
     # 🏷 Config Tag Format
@@ -59,11 +65,24 @@ class Settings:
 
     @property
     def WELCOME_TEXT(self):
-        return (
-            f"{self.BRAND_TITLE}\n\n"
-            f"{self.BRAND_DESCRIPTION}\n\n"
-            f"{self.START_MESSAGE_FOOTER}"
-        )
+        """
+        متن خوش‌آمدگویی بدون فاصله‌های اضافه
+        اگر هر بخش خالی باشد حذف می‌شود
+        """
+        parts = [
+            self.BRAND_TITLE,
+            self.BRAND_DESCRIPTION,
+            self.START_MESSAGE_FOOTER,
+        ]
+
+        # حذف بخش‌های خالی یا فقط شامل فاصله
+        cleaned_parts = [
+            part.strip()
+            for part in parts
+            if part and part.strip()
+        ]
+
+        return "\n\n".join(cleaned_parts)
 
     # =========================
     # 🛠 Admin Panel

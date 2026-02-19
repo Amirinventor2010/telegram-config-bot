@@ -1,25 +1,58 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 
-def admin_main_keyboard():
+# =========================
+# 👑 منوی اصلی ادمین
+# =========================
+def admin_main_keyboard(include_admin_manage: bool = False):
+    keyboard = [
+        [
+            KeyboardButton(text="📊 آمار کاربران"),
+            KeyboardButton(text="👥 مدیریت کاربران"),
+        ],
+        [
+            KeyboardButton(text="🗂 مدیریت کانفیگ و پروکسی"),
+            KeyboardButton(text="📢 مدیریت تبلیغات"),
+        ],
+    ]
+
+    # 👑 فقط برای سوپر ادمین
+    if include_admin_manage:
+        keyboard.append(
+            [KeyboardButton(text="👑 مدیریت ادمین‌ها")]
+        )
+
+    keyboard.append(
+        [KeyboardButton(text="🔙 بازگشت به منوی کاربر")]
+    )
+
+    return ReplyKeyboardMarkup(
+        keyboard=keyboard,
+        resize_keyboard=True
+    )
+
+
+# =========================
+# 👑 منوی مدیریت ادمین‌ها
+# =========================
+def admin_manage_admins_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
             [
-                KeyboardButton(text="📊 آمار کاربران"),
-                KeyboardButton(text="👥 مدیریت کاربران"),
+                KeyboardButton(text="➕ افزودن ادمین"),
+                KeyboardButton(text="➖ حذف ادمین"),
             ],
             [
-                KeyboardButton(text="🗂 مدیریت کانفیگ و پروکسی"),
-                KeyboardButton(text="📢 مدیریت تبلیغات"),
-            ],
-            [
-                KeyboardButton(text="🔙 بازگشت به منوی کاربر"),
+                KeyboardButton(text="🔙 بازگشت به پنل"),
             ]
         ],
         resize_keyboard=True
     )
 
 
+# =========================
+# 👥 مدیریت کاربران
+# =========================
 def admin_users_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -38,6 +71,9 @@ def admin_users_keyboard():
     )
 
 
+# =========================
+# 🗂 مدیریت کانفیگ و پروکسی
+# =========================
 def admin_configs_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -57,6 +93,9 @@ def admin_configs_keyboard():
     )
 
 
+# =========================
+# 📢 مدیریت تبلیغات
+# =========================
 def admin_ads_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -72,7 +111,9 @@ def admin_ads_keyboard():
     )
 
 
-
+# =========================
+# ➕ افزودن کانفیگ
+# =========================
 def admin_add_config_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -88,6 +129,9 @@ def admin_add_config_keyboard():
     )
 
 
+# =========================
+# 🛠 مدیریت کانفیگ
+# =========================
 def admin_manage_config_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -106,6 +150,9 @@ def admin_manage_config_keyboard():
     )
 
 
+# =========================
+# 🛠 مدیریت پروکسی
+# =========================
 def admin_manage_proxy_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[

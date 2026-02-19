@@ -22,21 +22,15 @@ class BroadcastState(StatesGroup):
 # =====================================================
 @router.message(F.text == "📢 ارسال همگانی")
 async def start_broadcast(message: Message, state: FSMContext):
-    await message.answer("✍️ لطفاً متن پیام همگانی را ارسال کنید:")
+    await message.answer("✍️ لطفاً پیام همگانی را ارسال کنید:")
     await state.set_state(BroadcastState.waiting_for_message)
 
 
 # =====================================================
-# 📤 ارسال به همه کاربران
+# 📤 ارسال به همه کاربران (با حفظ کامل فرمت)
 # =====================================================
 @router.message(BroadcastState.waiting_for_message)
 async def process_broadcast(message: Message, state: FSMContext):
-
-    broadcast_text = message.text
-
-    if not broadcast_text:
-        await message.answer("❌ پیام خالی است.")
-        return
 
     sent = 0
     failed = 0
@@ -49,12 +43,14 @@ async def process_broadcast(message: Message, state: FSMContext):
 
     for user in users:
         try:
-            await message.bot.send_message(
-                user.telegram_id,
-                broadcast_text
+            # 👇 این خط جادویی است
+            await message.bot.copy_message(
+                chat_id=user.telegram_id,
+                from_chat_id=message.chat.id,
+                message_id=message.message_id
             )
             sent += 1
-        except:
+        except Exception:
             failed += 1
 
     await message.answer(
