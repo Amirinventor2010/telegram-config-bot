@@ -15,7 +15,7 @@ from app.config import settings
 
 router = Router()
 
-CONFIGS_PER_PAGE = 5
+PROMO_TEXT = "\n\n⭐️ کانفیگ های رایگان بیشتر در :\n🟢 @ConfigFreeRbot"
 
 
 # =========================
@@ -33,7 +33,6 @@ async def config_menu(message: Message):
 
     async with AsyncSessionLocal() as session:
 
-        # 🔴 چک بن
         result = await session.execute(
             select(User).where(User.telegram_id == message.from_user.id)
         )
@@ -43,7 +42,6 @@ async def config_menu(message: Message):
             await message.answer("⛔ شما از استفاده از ربات مسدود شده‌اید.")
             return
 
-        # ✅ چک عضویت لحظه‌ای تبلیغات
         is_member = await is_user_member_all(
             message.bot,
             session,
@@ -66,7 +64,7 @@ async def config_menu(message: Message):
 
 
 # =========================
-# 📡 کانفیگ V2Ray (لینکی + صفحه‌بندی)
+# 📡 کانفیگ V2Ray
 # =========================
 @router.message(F.text == "📡 کانفیگ V2Ray")
 async def get_v2ray_configs(message: Message, state: FSMContext):
@@ -74,38 +72,12 @@ async def get_v2ray_configs(message: Message, state: FSMContext):
 
 
 # =========================
-# 🛰 کانفیگ NPV (فایل واقعی)
+# 🛰 کانفیگ NPV (فایل واقعی - صفحه‌بندی شده)
 # =========================
 @router.message(F.text == "🛰 کانفیگ NPV")
-async def get_npv_configs(message: Message):
+async def get_npv_configs(message: Message, state: FSMContext):
 
     async with AsyncSessionLocal() as session:
-
-        # 🔴 چک بن
-        result = await session.execute(
-            select(User).where(User.telegram_id == message.from_user.id)
-        )
-        user = result.scalar_one_or_none()
-
-        if user and user.is_banned:
-            await message.answer("⛔ شما از استفاده از ربات مسدود شده‌اید.")
-            return
-
-        # ✅ چک عضویت تبلیغات
-        is_member = await is_user_member_all(
-            message.bot,
-            session,
-            message.from_user.id
-        )
-
-        if not is_member:
-            channels = await get_active_channels(session)
-
-            await message.answer(
-                "❌ ابتدا عضو کانال‌ها شوید:",
-                reply_markup=ad_channels_keyboard(channels)
-            )
-            return
 
         result = await session.execute(
             select(Config)
@@ -122,9 +94,34 @@ async def get_npv_configs(message: Message):
         await message.answer("❌ فایل NPV موجود نیست.")
         return
 
-    for config in configs:
+    await state.update_data(
+        npv_configs=[(c.id, c.value) for c in configs],
+        offset=0
+    )
 
-        file_path = config.value
+    await send_npv_page(message, state)
+
+
+async def send_npv_page(message: Message, state: FSMContext, edit=False):
+
+    data = await state.get_data()
+    configs = data.get("npv_configs", [])
+    offset = data.get("offset", 0)
+
+    per_page = settings.ITEMS_PER_PAGE
+    next_offset = offset + per_page
+    page = configs[offset:next_offset]
+
+    if not page:
+        text = "❌ فایل بیشتری موجود نیست."
+        if edit:
+            await message.edit_text(text)
+        else:
+            await message.answer(text)
+        await state.clear()
+        return
+
+    for config_id, file_path in page:
 
         if not os.path.exists(file_path):
             await message.answer("❌ فایل روی سرور یافت نشد.")
@@ -132,12 +129,25 @@ async def get_npv_configs(message: Message):
 
         try:
             file = FSInputFile(file_path)
+
             await message.answer_document(
                 file,
-                caption=f"🛰 {settings.BOT_NAME} — فایل NPV شما"
+                caption=(
+                    f"🛰 {settings.BOT_NAME} — فایل NPV شما\n"
+                    f"{PROMO_TEXT}"
+                )
             )
+
         except Exception:
             await message.answer("❌ خطا در ارسال فایل.")
+
+    await state.update_data(offset=next_offset)
+
+    if next_offset < len(configs):
+        await message.answer(
+            "⬇️ برای دریافت فایل‌های بعدی:",
+            reply_markup=config_pagination_keyboard()
+        )
 
 
 # =========================
@@ -158,32 +168,6 @@ async def back_to_main(message: Message, state: FSMContext):
 async def send_configs_by_type(message: Message, state: FSMContext, config_type: str):
 
     async with AsyncSessionLocal() as session:
-
-        # 🔴 چک بن
-        result = await session.execute(
-            select(User).where(User.telegram_id == message.from_user.id)
-        )
-        user = result.scalar_one_or_none()
-
-        if user and user.is_banned:
-            await message.answer("⛔ شما از استفاده از ربات مسدود شده‌اید.")
-            return
-
-        # ✅ چک عضویت تبلیغات
-        is_member = await is_user_member_all(
-            message.bot,
-            session,
-            message.from_user.id
-        )
-
-        if not is_member:
-            channels = await get_active_channels(session)
-
-            await message.answer(
-                "❌ ابتدا عضو کانال‌ها شوید:",
-                reply_markup=ad_channels_keyboard(channels)
-            )
-            return
 
         result = await session.execute(
             select(Config)
@@ -208,25 +192,20 @@ async def send_configs_by_type(message: Message, state: FSMContext, config_type:
     await send_configs_page(message, state)
 
 
-# =========================
-# ➡️ صفحه بعد
-# =========================
 @router.callback_query(F.data == "next_configs")
 async def next_configs(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     await send_configs_page(callback.message, state, edit=True)
 
 
-# =========================
-# 📄 ارسال صفحه
-# =========================
 async def send_configs_page(message: Message, state: FSMContext, edit=False):
 
     data = await state.get_data()
     configs = data.get("configs", [])
     offset = data.get("offset", 0)
 
-    next_offset = offset + CONFIGS_PER_PAGE
+    per_page = settings.ITEMS_PER_PAGE
+    next_offset = offset + per_page
     page = configs[offset:next_offset]
 
     if not page:
@@ -244,6 +223,8 @@ async def send_configs_page(message: Message, state: FSMContext, edit=False):
         text += "━━━━━━━━━━━━━━\n"
         text += f"🔹 کانفیگ {idx}\n"
         text += f"<code>{link}</code>\n\n"
+
+    text += PROMO_TEXT
 
     await state.update_data(offset=next_offset)
 

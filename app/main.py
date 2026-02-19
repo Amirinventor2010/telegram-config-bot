@@ -28,7 +28,6 @@ from app.handlers.admin.manage_users import router as manage_users_router
 from app.handlers.admin.stats import router as stats_router
 from app.handlers.admin.broadcast import router as broadcast_router
 from app.handlers.admin.manage_ads import router as manage_ads_router
-from app.handlers.admin.add_app_file import router as add_app_file_router
 
 PROXY_URL = None
 
@@ -94,7 +93,6 @@ async def main():
         dp.include_router(stats_router)
         dp.include_router(broadcast_router)
         dp.include_router(manage_ads_router)
-        dp.include_router(add_app_file_router)
 
         await init_db()
 

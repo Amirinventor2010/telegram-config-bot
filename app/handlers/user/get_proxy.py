@@ -8,23 +8,15 @@ from app.database.session import AsyncSessionLocal
 from app.database.models import Config
 from app.config import settings
 
-
 router = Router()
 
+PROMO_TEXT = "\n\n⭐️ کانفیگ های رایگان بیشتر در :\n🟢 @ConfigFreeRbot"
 
-# =========================
-# 🧠 Pagination State
-# =========================
+
 class ProxyPagination(StatesGroup):
     offset = State()
 
 
-PROXIES_PER_PAGE = 5
-
-
-# =========================
-# 🌐 دریافت پروکسی
-# =========================
 @router.message(F.text == "🌐 دریافت پروکسی")
 async def start_get_proxies(message: Message, state: FSMContext):
 
@@ -52,25 +44,20 @@ async def start_get_proxies(message: Message, state: FSMContext):
     await send_proxies_page(message, state)
 
 
-# =========================
-# ➡️ صفحه بعدی
-# =========================
 @router.callback_query(F.data == "next_proxies")
 async def next_proxies(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     await send_proxies_page(callback.message, state, edit=True)
 
 
-# =========================
-# 📄 ارسال صفحه
-# =========================
 async def send_proxies_page(message: Message, state: FSMContext, edit=False):
 
     data = await state.get_data()
     proxies = data.get("proxies", [])
     offset = data.get("offset", 0)
 
-    next_offset = offset + PROXIES_PER_PAGE
+    per_page = settings.ITEMS_PER_PAGE
+    next_offset = offset + per_page
     page = proxies[offset:next_offset]
 
     if not page:
@@ -87,7 +74,9 @@ async def send_proxies_page(message: Message, state: FSMContext, edit=False):
     for idx, proxy in enumerate(page, start=offset + 1):
         text += "━━━━━━━━━━━━━━\n"
         text += f"🔹 پروکسی {idx}\n"
-        text += f"{proxy}\n\n"   # ✅ بدون <code>
+        text += f"{proxy}\n\n"  # بدون <code>
+
+    text += PROMO_TEXT
 
     await state.update_data(offset=next_offset)
 
@@ -103,9 +92,6 @@ async def send_proxies_page(message: Message, state: FSMContext, edit=False):
         )
 
 
-# =========================
-# 🔘 کیبورد اختصاصی پروکسی
-# =========================
 def _proxy_pagination_keyboard():
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 

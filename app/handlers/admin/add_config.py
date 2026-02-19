@@ -50,26 +50,107 @@ async def choose_npv(message: Message, state: FSMContext):
     )
 
     await state.set_state(AddConfigState.waiting_for_npv_file)
-
+    
 
 # =====================================================
-# 📨 ذخیره V2Ray
+# 📨 ذخیره V2Ray (پشتیبانی چندخطی)
 # =====================================================
 @router.message(AddConfigState.waiting_for_link)
 async def save_v2ray_config(message: Message, state: FSMContext):
 
-    raw_link = (message.text or "").strip()
+    raw_text = (message.text or "").strip()
 
-    if not raw_link:
+    if not raw_text:
         await message.answer("❌ لینک نامعتبر است.")
         return
 
+    # جدا کردن بر اساس خط
+    lines = [
+        line.strip()
+        for line in raw_text.splitlines()
+        if line.strip()
+    ]
+
+    if not lines:
+        await message.answer("❌ هیچ کانفیگ معتبری یافت نشد.")
+        return
+
+    added_count = 0
+
     async with AsyncSessionLocal() as session:
 
+        for link in lines:
+
+            # فقط لینک‌هایی که شبیه کانفیگ هستند
+            if not link.lower().startswith(
+                ("vless://", "vmess://", "trojan://", "ss://")
+            ):
+                continue
+
+            new_config = Config(
+                type="v2ray",
+                title="TEMP",
+                value=link,
+                is_active=True
+            )
+
+            session.add(new_config)
+            await session.commit()
+            await session.refresh(new_config)
+
+            config_id = new_config.id
+
+            # ری‌نیم بر اساس سیستم جدید
+            final_link = rename_config_link(link, config_id)
+
+            tag = f"@ConfigFreeRbot | 🟢 کانفیگ رایگان | {config_id}"
+
+            new_config.value = final_link
+            new_config.title = tag
+
+            await session.commit()
+
+            added_count += 1
+
+    if added_count == 0:
+        await message.answer("❌ هیچ کانفیگ معتبری ذخیره نشد.")
+    else:
+        await message.answer(
+            f"✅ {added_count} کانفیگ با موفقیت اضافه شد."
+        )
+
+    await state.clear()
+
+
+# =====================================================
+# 📂 ذخیره فایل NPV (با Rename حرفه‌ای)
+# =====================================================
+@router.message(AddConfigState.waiting_for_npv_file, F.document)
+async def save_npv_file(message: Message, state: FSMContext):
+
+    document: Document = message.document
+
+    if not document.file_name.lower().endswith(".npvt"):
+        await message.answer("❌ فقط فایل با پسوند .npvt مجاز است.")
+        return
+
+    os.makedirs("storage/npv", exist_ok=True)
+
+    # مرحله 1: ذخیره موقت
+    temp_path = f"storage/npv/temp_{document.file_unique_id}.npvt"
+
+    await message.bot.download(
+        document,
+        destination=temp_path
+    )
+
+    async with AsyncSessionLocal() as session:
+
+        # مرحله 2: ساخت رکورد برای گرفتن ID
         new_config = Config(
-            type="v2ray",
+            type="npv",
             title="TEMP",
-            value=raw_link,
+            value=temp_path,
             is_active=True
         )
 
@@ -79,60 +160,22 @@ async def save_v2ray_config(message: Message, state: FSMContext):
 
         config_id = new_config.id
 
-        final_link = rename_config_link(raw_link, config_id)
+        # مرحله 3: ساخت نام نهایی فایل
+        final_filename = f"{config_id}_@ConfigFreeRbot.npvt"
+        final_path = f"storage/npv/{final_filename}"
 
-        tag = settings.CONFIG_TAG_FORMAT.format(
-            bot_name=settings.BOT_NAME,
-            number=config_id
-        )
+        # Rename واقعی فایل
+        os.rename(temp_path, final_path)
 
-        new_config.value = final_link
-        new_config.title = tag
+        # آپدیت دیتابیس
+        new_config.title = final_filename
+        new_config.value = final_path
 
         await session.commit()
 
     await message.answer(
-        "✅ کانفیگ V2Ray با موفقیت اضافه شد.\n\n"
-        f"📌 عنوان: {tag}"
+        f"✅ فایل NPV با موفقیت ذخیره شد.\n\n"
+        f"📌 نام فایل: {final_filename}"
     )
-
-    await state.clear()
-
-
-# =====================================================
-# 📂 ذخیره فایل NPV
-# =====================================================
-@router.message(AddConfigState.waiting_for_npv_file, F.document)
-async def save_npv_file(message: Message, state: FSMContext):
-
-    document: Document = message.document
-
-    if not document.file_name.endswith(".npvt"):
-        await message.answer("❌ فقط فایل با پسوند .npvt مجاز است.")
-        return
-
-    # ساخت پوشه اگر نبود
-    os.makedirs("storage/npv", exist_ok=True)
-
-    file_path = f"storage/npv/{document.file_unique_id}.npvt"
-
-    await message.bot.download(
-        document,
-        destination=file_path
-    )
-
-    async with AsyncSessionLocal() as session:
-
-        new_config = Config(
-            type="npv",
-            title=document.file_name,
-            value=file_path,
-            is_active=True
-        )
-
-        session.add(new_config)
-        await session.commit()
-
-    await message.answer("✅ فایل NPV با موفقیت ذخیره شد.")
 
     await state.clear()

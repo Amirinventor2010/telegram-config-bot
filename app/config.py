@@ -14,22 +14,24 @@ class Settings:
     # =========================
     # 👑 Multiple Admin Support
     # =========================
-    # لیست ادمین‌ها از env به صورت: 111111,222222,333333
     ADMIN_IDS = [
         int(admin_id.strip())
         for admin_id in os.getenv("ADMIN_IDS", "").split(",")
         if admin_id.strip().isdigit()
     ]
 
-    # اولین ادمین = سوپر ادمین
     @property
     def SUPER_ADMIN_ID(self) -> int:
         return self.ADMIN_IDS[0] if self.ADMIN_IDS else 0
 
-    # برای سازگاری با کدهای قدیمی
     @property
     def ADMIN_ID(self) -> int:
         return self.SUPER_ADMIN_ID
+
+    # =========================
+    # 📄 Pagination Settings
+    # =========================
+    ITEMS_PER_PAGE = int(os.getenv("ITEMS_PER_PAGE", 3))
 
     # =========================
     # 🏷 Config Tag Format
@@ -67,7 +69,7 @@ class Settings:
     def WELCOME_TEXT(self):
         """
         متن خوش‌آمدگویی بدون فاصله‌های اضافه
-        اگر هر بخش خالی باشد حذف می‌شود
+        فقط یک خط جدید بین بخش‌ها
         """
         parts = [
             self.BRAND_TITLE,
@@ -75,14 +77,14 @@ class Settings:
             self.START_MESSAGE_FOOTER,
         ]
 
-        # حذف بخش‌های خالی یا فقط شامل فاصله
         cleaned_parts = [
             part.strip()
             for part in parts
             if part and part.strip()
         ]
 
-        return "\n\n".join(cleaned_parts)
+        # فقط یک newline
+        return "\n".join(cleaned_parts)
 
     # =========================
     # 🛠 Admin Panel

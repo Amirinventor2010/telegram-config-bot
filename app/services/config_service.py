@@ -6,7 +6,7 @@ from app.config import settings
 
 def rename_config_link(link: str, number: int) -> str:
     """
-    تغییر نام کانفیگ بر اساس فرمت تعیین شده در settings
+    تغییر نام کانفیگ V2Ray بر اساس برند سفارشی
     """
 
     if not link:
@@ -14,10 +14,8 @@ def rename_config_link(link: str, number: int) -> str:
 
     link = link.strip().replace("\ufeff", "")
 
-    tag = settings.CONFIG_TAG_FORMAT.format(
-        bot_name=settings.BOT_NAME,
-        number=number
-    )
+    # 🎯 فرمت جدید مورد نظر تو
+    tag = f"@ConfigFreeRbot | 🟢 کانفیگ رایگان | {number}"
 
     # اگر VMESS بود
     if link.lower().startswith("vmess://"):
@@ -29,7 +27,7 @@ def rename_config_link(link: str, number: int) -> str:
 
 def _rename_standard(link: str, tag: str) -> str:
     """
-    تغییر نام برای پروتکل‌های معمولی که بعد از # نام دارند
+    تغییر نام برای پروتکل‌هایی که بعد از # اسم دارند
     """
 
     if "#" in link:
@@ -72,5 +70,5 @@ def _rename_vmess(link: str, tag: str) -> str:
     except Exception as e:
         print("VMESS RENAME ERROR:", e)
 
-        # fallback اگر خراب بود
+        # fallback
         return _rename_standard(link, tag)

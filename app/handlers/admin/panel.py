@@ -13,6 +13,9 @@ from app.keyboards.admin_kb import (
     admin_configs_keyboard,
     admin_ads_keyboard,
     admin_manage_admins_keyboard,
+    admin_add_config_keyboard,
+    admin_manage_config_keyboard,
+    admin_manage_proxy_keyboard,
 )
 from app.keyboards.user_kb import user_main_keyboard
 from app.config import settings
@@ -90,7 +93,7 @@ async def manage_admins(message: Message):
 
 
 # =========================
-# ➕ درخواست افزودن ادمین
+# ➕ افزودن ادمین
 # =========================
 @router.message(F.text == "➕ افزودن ادمین")
 async def request_add_admin(message: Message, state: FSMContext):
@@ -130,7 +133,7 @@ async def add_admin_handler(message: Message, state: FSMContext):
 
 
 # =========================
-# ➖ درخواست حذف ادمین
+# ➖ حذف ادمین
 # =========================
 @router.message(F.text == "➖ حذف ادمین")
 async def request_remove_admin(message: Message, state: FSMContext):
@@ -151,7 +154,6 @@ async def remove_admin_handler(message: Message, state: FSMContext):
 
     admin_id = int(message.text)
 
-    # جلوگیری از حذف سوپر ادمین اصلی
     if admin_id in settings.ADMIN_IDS:
         await message.answer("⛔ امکان حذف سوپر ادمین وجود ندارد.")
         await state.clear()
@@ -176,10 +178,54 @@ async def remove_admin_handler(message: Message, state: FSMContext):
 
 
 # =========================
-# 🗂 مدیریت کانفیگ
+# 🗂 مدیریت کانفیگ و پروکسی
 # =========================
 @router.message(F.text == "🗂 مدیریت کانفیگ و پروکسی")
 async def manage_configs(message: Message):
+    if not await admin_check(message):
+        return
+
+    await message.answer(
+        "<b>🗂 مدیریت کانفیگ و پروکسی</b>\n\nعملیات مورد نظر را انتخاب کنید.",
+        reply_markup=admin_configs_keyboard()
+    )
+
+
+@router.message(F.text == "➕ افزودن کانفیگ")
+async def open_add_config_menu(message: Message):
+    if not await admin_check(message):
+        return
+
+    await message.answer(
+        "<b>➕ افزودن کانفیگ</b>\n\nنوع کانفیگ را انتخاب کنید.",
+        reply_markup=admin_add_config_keyboard()
+    )
+
+
+@router.message(F.text == "🛠 مدیریت کانفیگ")
+async def open_manage_config_menu(message: Message):
+    if not await admin_check(message):
+        return
+
+    await message.answer(
+        "<b>🛠 مدیریت کانفیگ</b>\n\nعملیات مورد نظر را انتخاب کنید.",
+        reply_markup=admin_manage_config_keyboard()
+    )
+
+
+@router.message(F.text == "🛠 مدیریت پروکسی")
+async def open_manage_proxy_menu(message: Message):
+    if not await admin_check(message):
+        return
+
+    await message.answer(
+        "<b>🛠 مدیریت پروکسی</b>\n\nعملیات مورد نظر را انتخاب کنید.",
+        reply_markup=admin_manage_proxy_keyboard()
+    )
+
+
+@router.message(F.text == "🔙 بازگشت به مدیریت")
+async def back_to_manage_menu(message: Message):
     if not await admin_check(message):
         return
 
