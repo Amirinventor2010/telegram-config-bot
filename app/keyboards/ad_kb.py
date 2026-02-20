@@ -9,7 +9,7 @@ def ad_channels_keyboard(channels):
         buttons.append(
             [
                 InlineKeyboardButton(
-                    text=f"📢 {ch.channel_id}",
+                    text=f"📢 {ch.channel_name}",
                     url=ch.invite_link
                 )
             ]

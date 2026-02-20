@@ -29,7 +29,6 @@ class User(Base):
         nullable=False
     )
 
-    # 🔴 سیستم بن
     is_banned: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
@@ -37,7 +36,6 @@ class User(Base):
         nullable=False
     )
 
-    # آیا تبلیغات اولیه را دیده؟
     ads_completed: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
@@ -90,7 +88,7 @@ class Config(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     type: Mapped[str] = mapped_column(
-        String(50),  # v2ray / npv / proxy
+        String(50),
         nullable=False
     )
 
@@ -131,13 +129,19 @@ class AdChannel(Base):
         nullable=False
     )
 
+    # 🔥 جدید: نام نمایشی برای دکمه جوین
+    channel_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False
+    )
+
     invite_link: Mapped[str] = mapped_column(
         String(500),
         nullable=False
     )
 
     ad_type: Mapped[str] = mapped_column(
-        String(20),  # join / view
+        String(20),
         nullable=False
     )
 
