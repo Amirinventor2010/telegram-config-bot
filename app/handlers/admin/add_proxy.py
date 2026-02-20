@@ -32,33 +32,50 @@ async def start_add_proxy(message: Message, state: FSMContext):
 
     await state.set_state(AddProxyState.waiting_for_proxy)
 
-
 # =========================
-# 📥 دریافت و ذخیره پروکسی
+# 📥 دریافت و ذخیره پروکسی (چندخطی بدون محدودیت)
 # =========================
 @router.message(AddProxyState.waiting_for_proxy)
 async def save_proxy(message: Message, state: FSMContext):
 
-    raw_proxy = message.text.strip()
+    raw_text = (message.text or "").strip()
 
-    if not raw_proxy:
+    if not raw_text:
         await message.answer("❌ پروکسی نامعتبر است.")
         return
 
+    # جدا کردن خطوط
+    lines = [
+        line.strip()
+        for line in raw_text.splitlines()
+        if line.strip()
+    ]
+
+    if not lines:
+        await message.answer("❌ هیچ مورد معتبری یافت نشد.")
+        return
+
+    added_count = 0
+
     async with AsyncSessionLocal() as session:
 
-        new_proxy = Config(
-            type="proxy",
-            title=None,
-            value=raw_proxy,
-            is_active=True
-        )
+        for proxy in lines:
 
-        session.add(new_proxy)
-        await session.commit()
+            # هر خط یک رکورد مستقل
+            new_proxy = Config(
+                type="proxy",
+                title=None,
+                value=proxy,
+                is_active=True
+            )
+
+            session.add(new_proxy)
+            await session.commit()
+
+            added_count += 1
 
     await message.answer(
-        "✅ پروکسی با موفقیت اضافه شد."
+        f"✅ {added_count} مورد با موفقیت اضافه شد."
     )
 
     await state.clear()

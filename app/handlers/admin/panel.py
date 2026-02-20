@@ -15,7 +15,6 @@ from app.keyboards.admin_kb import (
     admin_manage_admins_keyboard,
     admin_add_config_keyboard,
     admin_manage_config_keyboard,
-    admin_manage_proxy_keyboard,
 )
 from app.keyboards.user_kb import user_main_keyboard
 from app.config import settings
@@ -210,17 +209,6 @@ async def open_manage_config_menu(message: Message):
     await message.answer(
         "<b>🛠 مدیریت کانفیگ</b>\n\nعملیات مورد نظر را انتخاب کنید.",
         reply_markup=admin_manage_config_keyboard()
-    )
-
-
-@router.message(F.text == "🛠 مدیریت پروکسی")
-async def open_manage_proxy_menu(message: Message):
-    if not await admin_check(message):
-        return
-
-    await message.answer(
-        "<b>🛠 مدیریت پروکسی</b>\n\nعملیات مورد نظر را انتخاب کنید.",
-        reply_markup=admin_manage_proxy_keyboard()
     )
 
 

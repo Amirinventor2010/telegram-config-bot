@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from sqlalchemy import select, delete
+from sqlalchemy import select
 
 from app.database.session import AsyncSessionLocal
 from app.database.models import Config
@@ -13,7 +13,7 @@ from app.keyboards.admin_config_inline_kb import (
 
 router = Router()
 
-CONFIGS_PER_PAGE = 5
+CONFIGS_PER_PAGE = 10
 
 
 # =====================================================
@@ -21,18 +21,31 @@ CONFIGS_PER_PAGE = 5
 # =====================================================
 class AdminConfigPagination(StatesGroup):
     offset = State()
+    config_type = State()
 
 
 # =====================================================
-# 📋 لیست کانفیگ‌ها (بدون پروکسی)
+# 📡 مدیریت کانفیگ V2Ray
 # =====================================================
-@router.message(F.text == "📋 لیست کانفیگ‌ها")
-async def list_configs(message: Message, state: FSMContext):
+@router.message(F.text == "📡 مدیریت کانفیگ V2Ray")
+async def list_v2ray_configs(message: Message, state: FSMContext):
+    await load_configs(message, state, "v2ray")
+
+
+# =====================================================
+# 🛰 مدیریت کانفیگ NPV
+# =====================================================
+@router.message(F.text == "🛰 مدیریت کانفیگ NPV")
+async def list_npv_configs(message: Message, state: FSMContext):
+    await load_configs(message, state, "npv")
+
+
+async def load_configs(message: Message, state: FSMContext, config_type: str):
 
     async with AsyncSessionLocal() as session:
         result = await session.execute(
             select(Config)
-            .where(Config.type != "proxy")
+            .where(Config.type == config_type)
             .order_by(Config.id.desc())
         )
         configs = result.scalars().all()
@@ -45,9 +58,12 @@ async def list_configs(message: Message, state: FSMContext):
         configs=[{
             "id": c.id,
             "type": c.type,
-            "active": c.is_active
+            "active": c.is_active,
+            "value": c.value,
+            "title": c.title
         } for c in configs],
-        offset=0
+        offset=0,
+        config_type=config_type
     )
 
     await send_admin_config_page(message, state)
@@ -65,16 +81,15 @@ async def next_admin_configs(callback: CallbackQuery, state: FSMContext):
         return
 
     await callback.answer()
-    await send_admin_config_page(callback.message, state, edit=False)
+    await send_admin_config_page(callback.message, state)
 
 
 # =====================================================
 # 📄 ارسال صفحه
 # =====================================================
-async def send_admin_config_page(message, state: FSMContext, edit=False):
+async def send_admin_config_page(message, state: FSMContext):
 
     data = await state.get_data()
-
     configs = data.get("configs", [])
     offset = data.get("offset", 0)
 
@@ -95,10 +110,14 @@ async def send_admin_config_page(message, state: FSMContext, edit=False):
 
     for item in page:
 
+        status = "🟢 فعال" if item["active"] else "🔴 غیرفعال"
+
         text = (
             f"🆔 ID: <code>{item['id']}</code>\n"
             f"📦 نوع: {item['type']}\n"
-            f"📊 وضعیت: {'🟢 فعال' if item['active'] else '🔴 غیرفعال'}"
+            f"📝 عنوان: {item['title']}\n"
+            f"📊 وضعیت: {status}\n\n"
+            f"{item['value']}"
         )
 
         await message.answer(
@@ -114,6 +133,8 @@ async def send_admin_config_page(message, state: FSMContext, edit=False):
             "برای مشاهده ادامه:",
             reply_markup=config_pagination_keyboard()
         )
+    else:
+        await state.clear()
 
 
 # =====================================================
@@ -126,10 +147,7 @@ async def delete_config(callback: CallbackQuery):
 
     async with AsyncSessionLocal() as session:
         result = await session.execute(
-            select(Config).where(
-                Config.id == config_id,
-                Config.type != "proxy"
-            )
+            select(Config).where(Config.id == config_id)
         )
         config = result.scalar_one_or_none()
 
@@ -153,12 +171,8 @@ async def toggle_config(callback: CallbackQuery):
     config_id = int(callback.data.split(":")[1])
 
     async with AsyncSessionLocal() as session:
-
         result = await session.execute(
-            select(Config).where(
-                Config.id == config_id,
-                Config.type != "proxy"
-            )
+            select(Config).where(Config.id == config_id)
         )
         config = result.scalar_one_or_none()
 
@@ -169,10 +183,14 @@ async def toggle_config(callback: CallbackQuery):
         config.is_active = not config.is_active
         await session.commit()
 
+        status = "🟢 فعال" if config.is_active else "🔴 غیرفعال"
+
         text = (
             f"🆔 ID: <code>{config.id}</code>\n"
             f"📦 نوع: {config.type}\n"
-            f"📊 وضعیت: {'🟢 فعال' if config.is_active else '🔴 غیرفعال'}"
+            f"📝 عنوان: {config.title}\n"
+            f"📊 وضعیت: {status}\n\n"
+            f"{config.value}"
         )
 
         await callback.message.edit_text(
